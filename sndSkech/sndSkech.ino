@@ -1,102 +1,102 @@
 //
-// sndSkech
 //
-// Description of the project
-// Developed with [embedXcode](http://embedXcode.weebly.com)
+// code for sonic device.
+// created by takuma takahashi
+// Copyright (c)2015 takuma takahahsi All rights reserved.
 //
-// Author 		MediaSS-sound1
-// 				_testCode
-//
-// Date			2015/10/02 14:33
-// Version		<#version#>
-//
-// Copyright	© MediaSS-sound1, 2015年
-// Licence		<#license#>
-//
-// See         ReadMe.txt for references
 //
 
+// include MIDI library
+#include <MIDI.h>
+MIDI_CREATE_DEFAULT_INSTANCE();
 
-// Core library for code-sense - IDE-based
-#if defined(WIRING) // Wiring specific
-#include "Wiring.h"
-#elif defined(MAPLE_IDE) // Maple specific
-#include "WProgram.h"
-#elif defined(MPIDE) // chipKIT specific
-#include "WProgram.h"
-#elif defined(DIGISPARK) // Digispark specific
-#include "Arduino.h"
-#elif defined(ENERGIA) // LaunchPad specific
-#include "Energia.h"
-#elif defined(LITTLEROBOTFRIENDS) // LittleRobotFriends specific
-#include "LRF.h"
-#elif defined(MICRODUINO) // Microduino specific
-#include "Arduino.h"
-#elif defined(SPARK) || defined(PARTICLE) // Particle / Spark specific
-#include "application.h"
-#elif defined(TEENSYDUINO) // Teensy specific
-#include "Arduino.h"
-#elif defined(REDBEARLAB) // RedBearLab specific
-#include "Arduino.h"
-#elif defined(ESP8266) // ESP8266 specific
-#include "Arduino.h"
-#elif defined(ARDUINO) // Arduino 1.0 and 1.5 specific
-#include "Arduino.h"
-#else // error
-#error Platform not defined
-#endif // end IDE
+#define BUTTON_MAX 8
 
-// Include application, user and local libraries
+//  sets pin number
+int pushButton[] = {2,3,4,5,6,7,8,9};
 
+// checks if the button is pressed
+int buttonState[] = {0,0,0,0,0,0,0,0};
 
-// Define variables and constants
-//
-// Brief	Name of the LED
-// Details	Each board has a LED but connected to a different pin
-//
-uint8_t myLED;
+// play / stop notes in relation to buttons pressed
+int noteNum[] = {0,0,0,0,0,0,0,0};
 
+// sets note number
+int nn[] = {60,61,62,63,64,65,66,67};
 
-//
-// Brief	Setup
-// Details	Define the pin the LED is connected to
-//
-// Add setup code
+// sets velocity parameter
+int vel = 127;
+
+// midi flag
+bool flag_midi_on = false;
+bool sw[] = {LOW,LOW,LOW,LOW,LOW,LOW,LOW,LOW};
+bool osw[]= {LOW,LOW,LOW,LOW,LOW,LOW,LOW,LOW};
+
 void setup() {
-    // myLED pin number
-#if defined(ENERGIA) // All LaunchPads supported by Energia
-    myLED = RED_LED;
-#elif defined(DIGISPARK) // Digispark specific
-    myLED = 1; // assuming model A
-#elif defined(MAPLE_IDE) // Maple specific
-    myLED = BOARD_LED_PIN;
-#elif defined(WIRING) // Wiring specific
-    myLED = 15;
-#elif defined(LITTLEROBOTFRIENDS) // LittleRobotFriends specific
-    myLED = 10;
-#elif defined(PANSTAMP_AVR) // panStamp AVR specific
-    myLED = 7;
-#elif defined(PANSTAMP_NRG) // panStamp NRG specific
-    myLED = ONBOARD_LED;
-#elif defined(SPARK) || defined(PARTICLE) // Particle / Spark specific
-    myLED = D7;
-#elif defined(ESP8266) // ESP8266 specific
-    myLED = 2;
-#else // Arduino, chipKIT, Teensy specific
-    myLED = 13;
-#endif
+    // Launch MIDI with default options
+    MIDI.begin(4);
     
-    pinMode(myLED, OUTPUT);
+    // initializes buttons
+    for(int i = 0; i < BUTTON_MAX; i++){
+        //pinMode(pushButton[i], INPUT_PULLUP);
+        pinMode(pushButton[i], INPUT);
+    }
 }
 
-//
-// Brief	Loop
-// Details	Blink the LED
-//
-// Add loop code
 void loop() {
-    digitalWrite(myLED, HIGH);
-    delay(500);
-    digitalWrite(myLED, LOW);
-    delay(500);
+    // read state of buttons
+    for(int i = 0; i < BUTTON_MAX; i++){
+        buttonState[i] = digitalRead(pushButton[i]);
+        sw[i] = digitalRead(pushButton[i]);
+    }
+    
+    // checks ch.1 - ch.8
+    for(int i = 0; i < BUTTON_MAX; i++){
+        midiSend(i);
+        osw[i] = sw[i];
+    }
+    
+    delay(10);
+    
+}
+
+
+// midi send fuction
+void midiSend(int pin_num){
+    
+    // chattering code
+    if(osw[pin_num] == HIGH && sw[pin_num] == HIGH){
+        // if (buttonState[pin_num] == HIGH)
+        if(!flag_midi_on){
+            // if note not playing
+            if (noteNum[pin_num] == 0) {
+                // play note (note number, velocity, channel)
+                //MIDI.sendNoteOn(nn[pin_num], vel, pin_num + 1);
+                MIDI.sendNoteOn(nn[pin_num], vel, 1);
+                // note is playing
+                noteNum[pin_num] = 1;
+                flag_midi_on = true;
+            }
+        }else{
+            // if note playing
+            if (noteNum[pin_num] == 1) {
+                // if playing - stop
+                //MIDI.sendNoteOff(0,0,pin_num + 1);
+                MIDI.sendNoteOff(0,0,1);
+            }
+            // if button released note is off
+            noteNum[pin_num] = 0;
+        }
+        // when button released
+    } else {
+        flag_midi_on = false;
+        // if note playing
+        if (noteNum[pin_num] == 1) {
+            // if playing - stop
+            //MIDI.sendNoteOff(0,0,pin_num + 1);
+            MIDI.sendNoteOff(0,0,1);
+        }
+        // if button released note is off
+        noteNum[pin_num] = 0;
+    }
 }
