@@ -6,7 +6,7 @@
 //
 //
 
-// include MIDI library
+//include MIDI library
 #include <MIDI.h>
 MIDI_CREATE_DEFAULT_INSTANCE();
 
