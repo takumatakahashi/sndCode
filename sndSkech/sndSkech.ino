@@ -2,7 +2,7 @@
 //
 // code for sonic device.
 // created by takuma takahashi
-// Copyright (c)2015 takuma takahahsi All rights reserved.
+// copyright (c)2015 takuma takahahsi all rights reserved.
 //
 //
 
